@@ -1,0 +1,29 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@chakra-ui/icons": "^1.0.0",
+    "@chakra-ui/react": "^1.4.2",
+    "@emotion/react": "^11.0.0",
+    "@emotion/styled": "^11.0.0",
+    "@fontsource/josefin-sans": "^4.5.1",
+    "@fontsource/ubuntu": "^4.5.0",
+    "esbuild": "^0.13.13",
+    "framer-motion": "^4.0.3",
+    "mdx-bundler": "^7.0.0",
+    "next": "latest",
+    "next-seo": "^4.28.1",
+    "prism-react-renderer": "^1.2.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-icons": "^4.3.1",
+    "rehype-code-title": "^1.0.0",
+    "rehype-prism-plus": "^1.1.1",
+    "remark-mdx-code-meta": "^1.0.0",
+    "remark-plugin-colocate-images": "^0.2.0"
+  }
+}

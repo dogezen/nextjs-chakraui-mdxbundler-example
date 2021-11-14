@@ -1,0 +1,550 @@
+---
+title: How to setup a blog with NextJS, Chakra-UI and mdx-bundler in under a day
+author: Carlo Minciacchi
+published: true
+publishedOn: Sun 14 Nov 2021
+updatedOn: Sun 14 Nov 2021
+description: A tutorial on how to setup a blog with NextJS, Chakra-UI and mdx-bundler, so that you can write articles and immediately deploy.
+category: Coding
+tags: NextJS, Chakra UI
+---
+
+## Introduction
+In November 2021 I started a course calld [Building a Second Brain](https://www.buildingasecondbrain.com/), run by Tiago Forte and his team. A key principle of the course is to set up your own knowledge system (Second Brain) so that you can create and take action on the information that you consume.
+
+I decided to create this blog website because I wanted a way to share knowledge from my Second Brain. It is known that one of the best ways to learn is to teach others and writing up what you learn is a way to do so.
+
+In this guide, we look at how to setup a basic website for converting Markdown notes into blog posts.
+
+### Learning Objective
+I wanted to learn the following through this project:
+- How to use [React](https://reactjs.org/)
+- How to use a framework such as [NextJS](https://nextjs.org/) (which after some research really attracted my attention)
+- Use [Chakra-UI](https://chakra-ui.com/) for the design (the design really resonates with the look & feel)
+- Use [MDX](https://mdxjs.com/) through[mdx-bundler](https://github.com/kentcdodds/mdx-bundler) so that I could quickly convert my Second Brain notes (which are in [Obsidian](https://obsidian.md/) Markdown) to NextJS pages.
+
+## Setting things up
+I am assuming you are familiar with nodejs, JavaScript, git and that you have these installed on your machine.
+
+### Creating a new project
+
+I created a new repository for the project on [github](https://github.com/) and cloned this on my machine. I then initiated a new `nextjs` project starting from one of the [starter examples](https://github.com/vercel/next.js/tree/canary/examples). And disabled local [telemetry](https://nextjs.org/telemetry).
+
+```bash
+npx create-next-app --example with-chakra-ui .
+# disable telemetry
+npx next telemetry disable
+# running the template project
+npm run dev
+```
+
+### Setting up deployment to Vercel
+It was important for me to ensure that the whole project could be deployed easily.
+
+I created a new Vercel cloud project. Vercel is the company behind `nextjs` and they have made it really easy to deploy your website. Once you connect your git repository, Vercel will check for any new commits that are pushed on your git branches. Each push will trigger a re-build and re-deploy automatically.
+
+For this step, all I did was to follow [Vercel's NextJS deployment guide](https://nextjs.org/docs/deployment) step by step.
+
+## Customising the `chakra-ui` theme
+### Force dark mode
+I wanted the website to always be in dark mode, without a light mode. This can be easily achieved by adding some properties to your `theme.js`:
+
+```js
+// theme.js
+// update config property of theme
+const theme = extendTheme({
+    config: {
+        initialColorMode: "dark",
+        useSystemColorMode: false,
+    },
+    //...
+});
+
+```
+
+**Note** - if you have already launched the demo project, then it is likely that NextJS has created a localstorage variable that sets the theme color mode of `chakra-ui` to `light` which is the default for the example project.
+
+You will need to erase that localstorage variable:
+
+1. Open Developer Tools in your browser
+2. Navigate to the data/storage section
+3. Find localstorage for your localhost page
+4. Erase / delete the color mode variable if it is there
+
+### Adding custom fonts & typography
+To customise the fonts and typography, I used [fontsource](https://fontsource.org/fonts).
+
+I picked my desired fonts and then installed them to my project:
+
+```
+npm install @fontsource/josefin-sans @fontsource/ubuntu
+```
+
+I then updated the `theme.js` configuration for `chakra-ui` to use these fonts. 
+
+```js
+// theme.js
+
+const fonts = { 
+  mono: `'Menlo', monospace`,
+  heading: `'Ubuntu'`,
+  body: `'Josefin Sans'`
+}
+
+const globalStyles = {
+  body: {
+    lineHeight: "110%",
+    letterSpacing:"0.1em",
+    fontSize: "20px"
+  }
+}
+
+const theme = extendTheme({
+  styles: {
+    global: globalStyles
+  },
+  fonts,
+  //...
+})
+
+```
+
+Finally, we have to let `nextjs` import the fonts at an application level, so I added the following at the top of `_app.js`:
+```js
+// _app.js
+// above chakra-ui imports
+import "@fontsource/josefin-sans/400.css"
+import "@fontsource/ubuntu/700.css"
+```
+
+## Converting markdown to pages with `mdx-bundler`
+[MDX](https://mdxjs.com/) allows you to use JSX in your markdown content. You can import components, such as interactive charts or alerts, and embed them within your content. Behind the scenes it uses remark and rehype. 
+
+[Remark](https://github.com/remarkjs/remark) is a markdown parser: it inspects (check, lint) and transforms (generate, compile) markdown. [Rehype](https://github.com/rehypejs/rehype) is used to parse HTML. 
+
+In our case we use `mdx` to convert markdown all the way to react components that then form the blog content. The magic is done by [mdx-bundler](https://github.com/kentcdodds/mdx-bundler) that takes care of pulling everything together.
+
+### Integrating `mdx-bundler`
+**Step 1**: create a folder for all the `.mdx` articles. I chose `src/data/blogposts`. I created a couple of very simple articles in there with minimal content (a few lists, an image embed, inline code block, code block and various heading types and some URLs).
+
+Note that `mdx-bundler` uses [gray-matter](https://github.com/jonschlinkert/gray-matter) so that you can add metadata in your post and have this extracted and available to you in your javascript code. For the time being, my article metadata looks as follows:
+
+```yml
+---
+title: How to setup a blog with NextJS, Chakra-UI and mdx-bundler in under a day
+author: Carlo Minciacchi
+published: false
+publishedOn: Sun 14 Nov 2021
+updatedOn: never
+description: A tutorial on how to setup a blog with NextJS, Chakra-UI and mdx-bundler, so that you can write articles and immediately deploy.
+category: Coding
+tags: NextJS, Chakra UI
+---
+
+## Article content starts here
+
+Some content...
+
+```
+
+**Step 2**: write a set of utility functions to parse the articles and read them. I wrote these in `src/mdx.js`.
+
+The different utilities that are neede are the following:
+1. Loading the `.mdx` file contents
+2. Extracting `frontmatter` if needed (for example for the list of articles)
+3.  A method to compile the article `.mdx` to JSX
+4. Ability to handle additional plugins for `remark` and `rehype`
+
+Here's my `mdx.js`
+
+```js
+//mdx.js
+import fs from "fs";
+import path from "path";
+import matter from "gray-matter";
+import { bundleMDX } from "mdx-bundler";
+// remark plugin import
+import { remarkMdxCodeMeta } from 'remark-mdx-code-meta';
+import {colocateImagesPlugin} from "remark-plugin-colocate-images"
+
+// path and file locations
+export const ROOT = process.cwd();
+export const POSTS_PATH = path.join(process.cwd(), "src/data/blogposts");
+export const PUBLIC_IMG_PATH = path.join(process.cwd(), "public/img");
+
+// loads all the contents of a single .mdx file
+// in the blogposts folder
+export const getFileContent = (filename) => {
+  return fs.readFileSync(path.join(POSTS_PATH, filename), "utf8");
+};
+
+// takes the content of a .mdx file and runs
+// the mdx-bundler with the desired plugins to
+// return the generated jsx code and frontmatter content
+const getCompiledMDX = async (content) => {
+  // esbuild
+  if (process.platform === "win32") {
+    process.env.ESBUILD_BINARY_PATH = path.join(
+      ROOT,
+      "node_modules",
+      "esbuild",
+      "esbuild.exe"
+    );
+  } else {
+    process.env.ESBUILD_BINARY_PATH = path.join(
+      ROOT,
+      "node_modules",
+      "esbuild",
+      "bin",
+      "esbuild"
+    );
+  }
+  // Add your remark and rehype plugins here
+  const remarkPlugins = [remarkMdxCodeMeta, colocateImagesPlugin({
+    diskRoot: POSTS_PATH,
+    diskReplace: PUBLIC_IMG_PATH,
+    urlReplace: '/img/'
+  })];
+  const rehypePlugins = [];
+
+  try {
+    return await bundleMDX(content, {
+      xdmOptions(options) {
+        options.remarkPlugins = [
+          ...(options.remarkPlugins ?? []),
+          ...remarkPlugins,
+        ];
+        options.rehypePlugins = [
+          ...(options.rehypePlugins ?? []),
+          ...rehypePlugins,
+        ];
+
+        return options;
+      },
+    });
+  } catch (error) {
+    throw new Error(error);
+  }
+};
+
+// method to take a url slug (ie domain.com/blog/slug)
+// and find the relevant file in the blog folder
+// if the file is found, it is compiled to JSX
+// and the code and frontmatter are returned
+export const getSinglePost = async (slug) => {
+  const source = getFileContent(`${slug}.mdx`);
+  const { code, frontmatter } = await getCompiledMDX(source);
+
+  return {
+    code,
+    frontmatter,
+  };
+};
+
+// method to return all the post frontmatter and slug information
+// from the directory, in future will fillter for isPublished
+export const getAllPosts = () => {
+  return fs
+    .readdirSync(POSTS_PATH)
+    .filter((path) => /\.mdx?$/.test(path))
+    .map((fileName) => {
+      const source = getFileContent(fileName);
+      const slug = fileName.replace(/\.mdx?$/, "");
+      const { data } = matter(source);
+
+      return {
+        frontmatter: data,
+        slug: slug,
+      };
+    });
+};
+
+```
+
+
+**Step 3**: map react components to `chakra-ui` components. `mdx-bundler` will map your own components to specific HTML tags. This lets you, for example, have your own React components for an `h1` tag or an `a` link, and much more. In our case, we want to map several HTML tags to our own `chakra-ui` components. Some of these are actually quite complicated, in particular the `CodeBlock` component.
+
+```js
+// components/mdx-components/mdx-components.js
+import * as Chakra from "@chakra-ui/react"
+import {Pre} from './pre'
+import { LinkedHeading } from "./linked-heading"
+import CodeBlock from "./codeblock/codeblock"
+import {InlineCode} from "./inline-code"
+import { Anchor } from "./anchor"
+
+// map our own chakra-ui components for the relevant tags
+export const MDXComponents = {
+  ...Chakra,
+  h1: (props) => <Chakra.Heading  {...props} />,
+  h2: (props) => <LinkedHeading apply="mdx.h2" {...props} />,
+  h3: (props) => <LinkedHeading as="h3" apply="mdx.h3" {...props} />,
+  hr: (props) => <Chakra.chakra.hr apply="mdx.hr" {...props} />,
+  strong: (props) => <Chakra.Box as="strong" fontWeight="semibold"  {...props} />,
+  inlineCode: InlineCode,
+  code: CodeBlock,
+  pre: Pre,
+  p: (props) => <Chakra.chakra.p apply="mdx.p" {...props} />,
+  ul: (props) => <Chakra.chakra.ul apply="mdx.ul" {...props} />,
+  ol: (props) => <Chakra.chakra.ol apply="mdx.ul" {...props} />,
+  li: (props) => <Chakra.chakra.li pb="4px" {...props} />,
+  a: Anchor,
+}
+```
+
+The styling for the components above, for example `apply="mdx.p"`, are defined in the `theme.js` configuration.
+
+```js
+// theme.js
+const theme = extendTheme({
+    //...
+  mdx: {
+    h1: {
+      mt: "2rem",
+      mb: ".25rem",
+      lineHeight: 1.2,
+      fontWeight: "bold",
+      fontSize: "2.175rem",
+      letterSpacing: "-.025em",
+    },
+    //..
+  }
+  //...
+};
+  
+```
+
+**Step 4**: creating a blog page template in `pages/blog/[slug].js`. When visiting a page on the site at `domain.com/blog/some-page`, then `some-page` is the slug. We then want to load the `some-page.mdx` article that matches the slug name and render it in JSX.
+
+```js
+//pages/blog/[slug].js
+
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Divider,
+  VStack,
+  Spacer,
+  chakra
+} from '@chakra-ui/react'
+import {getMDXComponent} from 'mdx-bundler/client'
+import React from 'react'
+import { Footer } from '../../components/Footer'
+import {useMemo} from 'react';
+import Header from '../../components/header';
+import SEO from '../../components/seo';
+
+import {getAllPosts, getSinglePost } from '../../mdx'
+
+// get the map between react and chakra-ui components
+import {MDXComponents} from '../../components/mdx-components/mdx-components'
+
+const Blog = ({ code, frontmatter }) => {
+  // get the bundled mdx component from the generated code
+  const BlogComponent = useMemo(() => getMDXComponent(code), [code])
+  return(
+    <>
+      <SEO title={frontmatter.title} description={frontmatter.description}/>
+      <Header />
+      <Box as='main' w='full' maxW='5xl' mx='auto'>
+        <Box display={{ md: 'flex' }}>
+          <Box flex='1' minW='0'>
+            <Box id='content' px={5} mx='auto' minH='76vh'>
+              <Flex>
+                <Box
+                      minW='0'
+                      flex='auto'
+                      px={{ base: '4', sm: '6', xl: '8' }}
+                      pt='10'
+                    >
+                    <VStack>
+                      <Heading p={5} tabIndex={-1} outline={0}>
+                        {frontmatter.title}
+                      </Heading>
+                      <Divider />
+                      <Flex p={5} w="100%">
+                        <Text  color="gray.500">
+                          {frontmatter.author}
+                        </Text>
+                        <Spacer />
+                        <Text  color="gray.500">
+                          {frontmatter.publishedOn}
+                        </Text>
+                      </Flex>
+                    </VStack>
+                    {frontmatter.headings}
+                    <BlogComponent components={MDXComponents}/>
+                    <Divider paddingTop={6} />
+                    <Footer />
+                </Box>
+              </Flex>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </>
+  );
+}
+
+// use static site generation
+export const getStaticProps = async ({ params }) => {
+  const post = await getSinglePost(params.slug);
+  return {
+    props: { ...post },
+  };
+};
+
+export const getStaticPaths = async () => {
+  const paths = getAllPosts().map(({ slug }) => ({ params: { slug } }));
+  return {
+    paths,
+    fallback: false,
+  };
+};
+
+export default Blog
+
+```
+
+**Note**: we import the `MDXComponents` that we are mapping to HTML tags and passing this to the wepage content that `mdx-bundler` generates, called `BlogComponent` when we return the JSX.
+
+**Step 5**: creating a home page that shows all the blog posts. I was inspired by [Choc-UI](https://choc-ui.tech/)'s templates that use `Chakra-ui` to create the `Header` & `Footer` components. In the home page, we request all of the article metadata and for each article, we produce a card to present the information of the article and link to the article's page.
+
+```js
+//pages/index.js
+import {
+  Box,
+  Flex,
+  Heading,
+  Text,
+  Divider,
+} from '@chakra-ui/react'
+import React from 'react'
+import { Footer } from '../components/Footer'
+import {BlogCard} from '../components/BlogCard'
+import Header from '../components/header'
+import SEO from '../components/seo'
+
+import {getAllPosts } from '../mdx'
+
+export default function Blog({posts}) {
+  return(
+    <>
+      <SEO title="Explorations" description="Exploring how to take action towards developing skills and growing as a person in various aspects of your life."/>
+      <Header />
+      <Box as='main' w='full' maxW='5xl' mx='auto'>
+        <Box display={{ base: 'flex' }}>
+          <Box flex='1' minW='0'>
+            <Box py={[0, 6]} id='content' px={[0, 5]} mx='auto' minH='76vh'>
+              <Flex>
+                <Box
+                      minW='0'
+                      flex='auto'
+                      px={{ base: '4', sm: '6', xl: '8' }}
+                      pt='10'
+                    >
+                    <Flex justifyContent="center" alignItems="center">
+                      <Heading>Experiential Learning</Heading>
+                    </Flex>
+                    <Text my={[4, 6]} color="gray.300" align="justify" lineHeight="1.3">
+                        Experiential Learning is all about growing as a person through experiences. I publish articles on topics that I find interesting, in particular to encourage others to take action towards developing skills and growing as a person in various aspects of their lives. 
+                    </Text>
+                    {posts.map((post) => {
+                      return <BlogCard key={post.frontmatter.title} {...post} />
+                    })}
+
+                    <Divider paddingTop={6} />
+                    <Footer />
+                </Box>
+              </Flex>
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+    </>
+  );
+
+}
+export function getStaticProps() {
+  return { props: { posts: getAllPosts() } };
+}
+```
+
+### Implementing `mdx-bundler` with `chakra-ui`
+The tricky part, that took me a long time to figure out was how to map basic React components returned by `mdx-bundler` to `chakra-ui` components.
+
+### Code blocks, Inline code blocks
+I was heavily inspired by the developer behind `chakra-ui` for hte code block and inline code components. I ported the code block component in the [Chakra-ui docs repository](https://github.com/chakra-ui/chakra-ui-docs) back to JS and made minor tweaks to fit my needs (stripped it from line numberings and line highlights, for example).
+
+### Images
+The final step was to guarantee that images could work. In my second brain in Obsidian, I have configured it to store image attachments in the same folder as my markdown files. So whenever I embed a file in my Obsidian vault, the file sits alongside the note.
+
+I wanted a quick way to copy my draft in obsidian and have it ready for publication. Hence, after some research, I came across a plugin for Remark called [Co-Locate Images](https://github.com/Arcath/remark-plugin-colocate-images). The plugin detects image embeds at a specified folder in the repository and copies them over to the `public/img` folder for me. This means that when I embed an image in my markdown, it is then maid available to the website.
+
+```js
+// mdx.js
+
+export const POSTS_PATH = path.join(process.cwd(), "src/data/blogposts");
+export const PUBLIC_IMG_PATH = path.join(process.cwd(), "public/img");
+
+// copy images from POSTS_PATH to PUBLIC_IMG_PATH and replace ./ with /img/
+const remarkPlugins = [remarkMdxCodeMeta, colocateImagesPlugin({
+diskRoot: POSTS_PATH,
+diskReplace: PUBLIC_IMG_PATH,
+urlReplace: '/img/'
+})];
+```
+
+There is only one thing I must do to migrate an obsidian image embed to work in my `.mdx` file. In obsidian, file links are as follow:
+
+```
+![[ObsidianVault_screenshot_for_first_blog.png]]
+```
+
+And in `.mdx` they must be changed to:
+
+```
+![alt text](./ObsidianVault_screenshot_for_first_blog.png)
+```
+
+At some point, I will write an additional `Remark` plugin that finds all the obsidian file links and replaces them with standard markdown attachment links.
+
+### SEO, Header & Footer
+Once all the pages were working, I added:
+1. basic [SEO](https://github.com/garmeeh/next-seo) (which adds a `<head>` block to each page)
+2. a Header section (basic top-page menu)
+3. the footer.
+
+### Responsiveness
+It is quite simple to add responsiveness to `chakra-ui`, I simply followed the [Responsive Styles documentation](https://chakra-ui.com/docs/features/responsive-styles).
+
+## Open Sourcing the initial project
+I have decided to make an Open Source copy of my project as it is after the first day working on it. I have learned much from being able to look at other people's code and hope others can get started quickly as well.
+
+### Resources & Inspiration
+I made use of several resources that made it possible for me to pull together everything needed to setup the website. I would like to thank everyone here!
+
+**Inspiration**
+- Lee Robinson's [article](https://leerob.io/blog/mdx) about using MDX in their website
+- Josh Comeau's [article](https://www.joshwcomeau.com/blog/how-i-built-my-blog/) on how they built their blog
+
+**MDX** reference - guides and tutorials on how to use MDX properly
+- [https://www.janasundar.dev/posts/how-i-built-my-blog-with-nextjs](https://www.janasundar.dev/posts/how-i-built-my-blog-with-nextjs)
+- [https://dipeshwagle.com/blog/use-mdx-bundler-next-js](https://dipeshwagle.com/blog/use-mdx-bundler-next-js)
+- [https://hackernoon.com/how-to-use-mdx-bundler-with-nextjs](https://hackernoon.com/how-to-use-mdx-bundler-with-nextjs)
+- [https://www.iamyadav.com/blogs/use-mdx-bundler-with-next-js](https://www.iamyadav.com/blogs/use-mdx-bundler-with-next-js)
+
+**NextJS** open source projects used to understand how to put everything together
+- [NextJS markdown to HTML example](https://github.com/vercel/next.js/blob/canary/examples/blog-starter/lib/markdownToHtml.js)
+- [Chakra-ui's open source documentation repository](https://github.com/chakra-ui/chakra-ui-docs)
+- [Lee Robinson's blog website](https://github.com/leerob/leerob.io)
+
+**Other** resources used throughout
+- [Converting a text string to an SVG logo with google fonts](https://danmarshall.github.io/google-font-to-svg-path/)
+
+**Chakra-ui templates**
+- [Choc-ui](https://choc-ui.tech)
+- [Chakra-ui Pro](https://pro.chakra-ui.com/components/free)
+- [Colors in Chakra-UI](https://chakra-ui.com/docs/theming/theme)
