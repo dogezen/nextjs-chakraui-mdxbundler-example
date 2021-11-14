@@ -46,6 +46,7 @@ export const BlogCard = (props) => {
           <Spacer />
           {tags.map((tag) => {
             return <chakra.span
+                      key={tag}
                       bg="#888EC5"
                       color="#08081A"
                       mx = {1}
