@@ -19,7 +19,8 @@ const globalStyles = {
     lineHeight: "90%",
     letterSpacing:"0.05em",
     fontSize: "20px",
-    textAlign: "justify"
+    textAlign: "justify",
+    width: "100%"
   }
 }
 

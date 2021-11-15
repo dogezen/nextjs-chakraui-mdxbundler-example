@@ -7,7 +7,7 @@ import { SocialMediaLinks } from './social-media-links'
 export const Footer = () => (
   <Box as="footer" role="contentinfo" mx="auto" maxW="7xl" py="8" px={{ base: '4', md: '8' }}>
     <Stack>
-      <Stack direction="row" spacing="4" align="center" justify="space-between">
+      <Stack direction={{base: "column", sm: "row"}} spacing="4" align="center" justify="space-between">
         <Logo />
         <SocialMediaLinks />
       </Stack>

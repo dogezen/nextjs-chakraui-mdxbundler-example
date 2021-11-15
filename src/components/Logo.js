@@ -9,7 +9,7 @@ export const Logo = (props) => {
     <chakra.svg
       color={useColorModeValue('blue.500', 'blue.300')}
       aria-hidden
-      viewBox="0 0 300 24"
+      viewBox="0 0 200 24"
       fill="none"
       h="6"
       flexShrink={0}

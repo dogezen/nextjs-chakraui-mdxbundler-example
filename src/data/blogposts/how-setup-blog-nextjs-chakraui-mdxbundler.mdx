@@ -1,13 +1,15 @@
 ---
-title: How to setup a blog with NextJS, Chakra-UI and mdx-bundler in under a day
+title: How I built this blog website in under a day
 author: Carlo Minciacchi
 published: true
 publishedOn: Sun 14 Nov 2021
 updatedOn: Sun 14 Nov 2021
-description: A tutorial on how to setup a blog with NextJS, Chakra-UI and mdx-bundler, so that you can write articles and immediately deploy.
+description: A tutorial on how I setup this blog website with NextJS, Chakra-UI and mdx-bundler. This lets me publish articles and immediately deploy them.
 category: Coding
 tags: NextJS, Chakra UI
 ---
+
+The code for the first version of the website [is open source](https://github.com/dogezen/nextjs-chakraui-mdxbundler-example)!
 
 ## Introduction
 In November 2021 I started a course calld [Building a Second Brain](https://www.buildingasecondbrain.com/), run by Tiago Forte and his team. A key principle of the course is to set up your own knowledge system (Second Brain) so that you can create and take action on the information that you consume.
@@ -76,7 +78,7 @@ To customise the fonts and typography, I used [fontsource](https://fontsource.or
 
 I picked my desired fonts and then installed them to my project:
 
-```
+```bash
 npm install @fontsource/josefin-sans @fontsource/ubuntu
 ```
 
@@ -476,12 +478,12 @@ export function getStaticProps() {
 The tricky part, that took me a long time to figure out was how to map basic React components returned by `mdx-bundler` to `chakra-ui` components.
 
 ### Code blocks, Inline code blocks
-I was heavily inspired by the developer behind `chakra-ui` for hte code block and inline code components. I ported the code block component in the [Chakra-ui docs repository](https://github.com/chakra-ui/chakra-ui-docs) back to JS and made minor tweaks to fit my needs (stripped it from line numberings and line highlights, for example).
+I was heavily inspired by the developer behind `chakra-ui` for the code block and inline code components. I ported the code block component in the [Chakra-ui docs repository](https://github.com/chakra-ui/chakra-ui-docs) back to JS and made minor tweaks to fit my needs (stripped it from line numberings and line highlights, for example).
 
 ### Images
 The final step was to guarantee that images could work. In my second brain in Obsidian, I have configured it to store image attachments in the same folder as my markdown files. So whenever I embed a file in my Obsidian vault, the file sits alongside the note.
 
-I wanted a quick way to copy my draft in obsidian and have it ready for publication. Hence, after some research, I came across a plugin for Remark called [Co-Locate Images](https://github.com/Arcath/remark-plugin-colocate-images). The plugin detects image embeds at a specified folder in the repository and copies them over to the `public/img` folder for me. This means that when I embed an image in my markdown, it is then maid available to the website.
+I wanted a quick way to copy my draft in obsidian and have it ready for publication. Hence, after some research, I came across a plugin for Remark called [Co-Locate Images](https://github.com/Arcath/remark-plugin-colocate-images). The plugin detects image embeds at a specified folder in the repository and copies them over to the `public/img` folder for me. This means that when I embed an image in my markdown, it is then made available to the website.
 
 ```js
 // mdx.js
@@ -499,13 +501,13 @@ urlReplace: '/img/'
 
 There is only one thing I must do to migrate an obsidian image embed to work in my `.mdx` file. In obsidian, file links are as follow:
 
-```
+```md
 ![[ObsidianVault_screenshot_for_first_blog.png]]
 ```
 
 And in `.mdx` they must be changed to:
 
-```
+```md
 ![alt text](./ObsidianVault_screenshot_for_first_blog.png)
 ```
 
@@ -521,7 +523,7 @@ Once all the pages were working, I added:
 It is quite simple to add responsiveness to `chakra-ui`, I simply followed the [Responsive Styles documentation](https://chakra-ui.com/docs/features/responsive-styles).
 
 ## Open Sourcing the initial project
-I have decided to make an Open Source copy of my project as it is after the first day working on it. I have learned much from being able to look at other people's code and hope others can get started quickly as well.
+I have decided to make an [Open Source copy of my project](https://github.com/dogezen/nextjs-chakraui-mdxbundler-example) after the first day working on it. I have learned much from being able to look at other people's code and hope others can get started quickly as well.
 
 ### Resources & Inspiration
 I made use of several resources that made it possible for me to pull together everything needed to setup the website. I would like to thank everyone here!
